@@ -8,7 +8,9 @@ function Dashboard() {
   const navigate = useNavigate();
 
   const user =
-    JSON.parse(localStorage.getItem("user"));
+    JSON.parse(
+      localStorage.getItem("user")
+    );
 
   /* STATES */
 
@@ -25,6 +27,10 @@ function Dashboard() {
 
   const [workoutTime,
     setWorkoutTime] =
+    useState(0);
+
+  const [fitnessScore,
+    setFitnessScore] =
     useState(0);
 
   const [streak,
@@ -95,7 +101,7 @@ function Dashboard() {
 
   ];
 
-  /* LOAD PROFILE */
+  /* LOAD */
 
   useEffect(() => {
 
@@ -162,7 +168,10 @@ function Dashboard() {
         );
       }
 
-      if(data.height && data.weight){
+      if(
+        data.height &&
+        data.weight
+      ){
 
         calculateBMIValue(
           data.height,
@@ -176,110 +185,105 @@ function Dashboard() {
     }
   };
 
-  /* =========================================
-   REPLACE YOUR OLD BMI SECTION
-   INSIDE Dashboard.js
-========================================= */
+  /* BMI */
 
-/* BMI */
+  const calculateBMIValue = (
+    height,
+    weight
+  ) => {
 
-const calculateBMIValue = (
-  height,
-  weight
-) => {
+    const heightValue =
+      parseFloat(height);
 
-  const heightValue =
-    parseFloat(height);
+    const weightValue =
+      parseFloat(weight);
 
-  const weightValue =
-    parseFloat(weight);
+    if(
+      !heightValue ||
+      !weightValue
+    ){
 
-  /* VALIDATION */
+      return;
+    }
 
-  if(
-    !heightValue ||
-    !weightValue
-  ){
+    const h =
+      heightValue / 100;
 
-    return;
-  }
+    const result =
+      (
+        weightValue /
+        (h * h)
+      ).toFixed(1);
 
-  /* CALCULATION */
+    const bmiNumber =
+      parseFloat(result);
 
-  const h =
-    heightValue / 100;
+    setBmi(result);
 
-  const result =
-    (
-      weightValue /
-      (h * h)
-    ).toFixed(1);
+    /* CATEGORY */
 
-  const bmiNumber =
-    parseFloat(result);
+    if(bmiNumber < 18.5){
 
-  /* SET BMI */
+      setBmiCategory(
+        "Underweight"
+      );
 
-  setBmi(result);
+      setFitnessScore(65);
+    }
 
-  /* CATEGORY */
+    else if(
+      bmiNumber >= 18.5 &&
+      bmiNumber < 25
+    ){
 
-  if(bmiNumber < 18.5){
+      setBmiCategory(
+        "Normal"
+      );
 
-    setBmiCategory(
-      "Underweight"
+      setFitnessScore(95);
+    }
+
+    else if(
+      bmiNumber >= 25 &&
+      bmiNumber < 30
+    ){
+
+      setBmiCategory(
+        "Overweight"
+      );
+
+      setFitnessScore(70);
+    }
+
+    else{
+
+      setBmiCategory(
+        "Obese"
+      );
+
+      setFitnessScore(45);
+    }
+  };
+
+  const calculateBMI = () => {
+
+    if(
+      heightInput === "" ||
+      weightInput === ""
+    ){
+
+      alert(
+        "Enter height and weight"
+      );
+
+      return;
+    }
+
+    calculateBMIValue(
+      heightInput,
+      weightInput
     );
-  }
-
-  else if(
-    bmiNumber >= 18.5 &&
-    bmiNumber < 25
-  ){
-
-    setBmiCategory(
-      "Normal"
-    );
-  }
-
-  else if(
-    bmiNumber >= 25 &&
-    bmiNumber < 30
-  ){
-
-    setBmiCategory(
-      "Overweight"
-    );
-  }
-
-  else{
-
-    setBmiCategory(
-      "Obese"
-    );
-  }
-};
-
-/* BUTTON */
-
-const calculateBMI = () => {
-
-  if(
-    heightInput === "" ||
-    weightInput === ""
-  ){
-
-    alert(
-      "Enter height and weight"
-    );
-
-    return;
-  }
-
-  calculateBMIValue(
-    heightInput,
-    weightInput
-  );
-};
+  };
 
   /* TIMER */
 
@@ -350,96 +354,47 @@ const calculateBMI = () => {
 
     if(timer >= current.duration){
 
-      const completeWorkout =
-      async() => {
+      setCompleted(prev => [
 
-        setCompleted(prev => [
+        ...prev,
+        currentWorkoutIndex
 
-          ...prev,
-          currentWorkoutIndex
+      ]);
 
-        ]);
+      setTimer(0);
 
-        /* SAVE HISTORY */
+      if(
+        currentWorkoutIndex <
+        workouts.length - 1
+      ){
 
-        try{
+        setCurrentWorkoutIndex(
+          prev => prev + 1
+        );
+      }
 
-          await fetch(
-          "http://localhost:5000/api/history/save",
-          {
+      else{
 
-            method:"POST",
+        setIsRunning(false);
 
-            headers:{
-              "Content-Type":
-              "application/json"
-            },
+        setIsPaused(false);
 
-            body:JSON.stringify({
+        const updatedStreak =
+          streak + 1;
 
-              userId:user._id,
+        setStreak(
+          updatedStreak
+        );
 
-              workoutName:
-              current.name,
+        localStorage.setItem(
+          "streak",
+          updatedStreak
+        );
 
-              duration:
-              current.duration,
-
-              calories:
-              Math.floor(calories),
-
-              bmi,
-
-              goal:"Weight Loss",
-
-              level:"Beginner",
-
-              completed:true
-            })
-          });
-
-        }catch(err){
-
-          console.log(err);
-        }
-
-        setTimer(0);
-
-        if(
-          currentWorkoutIndex <
-          workouts.length - 1
-        ){
-
-          setCurrentWorkoutIndex(
-            prev => prev + 1
-          );
-        }
-
-        else{
-
-          setIsRunning(false);
-
-          setIsPaused(false);
-
-          const updatedStreak =
-            streak + 1;
-
-          setStreak(
-            updatedStreak
-          );
-
-          localStorage.setItem(
-            "streak",
-            updatedStreak
-          );
-
-          alert(
-            "Workout Completed!"
-          );
-        }
-      };
-
-      completeWorkout();
+        alert(
+          "Workout Completed!"
+        );
+      }
     }
 
   }, [timer]);
@@ -466,7 +421,7 @@ const calculateBMI = () => {
     setIsPaused(false);
   };
 
-  /* FORMAT TIME */
+  /* FORMAT */
 
   const formatTime = (
     seconds
@@ -481,208 +436,183 @@ const calculateBMI = () => {
     return `${mins}m ${secs}s`;
   };
 
-  /* HEALTH RISK */
+  /* HEALTH */
 
   const getHealthRisk = () => {
 
-    if(bmi >= 30){
+    if(bmiCategory === "Underweight"){
 
-      return "High Obesity Risk";
+      return "Low Weight Risk";
     }
 
-    if(bmi >= 25){
+    if(bmiCategory === "Normal"){
+
+      return "Healthy";
+    }
+
+    if(bmiCategory === "Overweight"){
 
       return "Moderate Risk";
     }
 
-    if(bmi < 18.5){
-
-      return "Underweight Risk";
-    }
-
-    return "Healthy";
+    return "High Risk";
   };
 
- /* DIET PLAN */
+  const getHealthMessage = () => {
 
-const getDietPlan = () => {
+    if(bmiCategory === "Underweight"){
 
-  const bmiValue =
-    parseFloat(bmi);
+      return "Increase healthy calorie intake and strength workouts.";
+    }
 
-  let plan = {};
+    if(bmiCategory === "Normal"){
 
-  if(bmiValue < 18.5){
+      return "Great job maintaining a healthy body composition.";
+    }
 
-    plan = {
+    if(bmiCategory === "Overweight"){
 
-      title:
-      "Weight Gain Diet",
+      return "Focus on cardio and calorie deficit diet.";
+    }
 
-      calories:
-      "2800 kcal",
+    return "Reduce weight through active lifestyle and healthy nutrition.";
+  };
 
-      protein:
-      "170g",
+  const getWorkoutSuggestion = () => {
 
-      carbs:
-      "350g",
+    if(bmiCategory === "Underweight"){
 
-      fats:
-      "80g",
+      return "Strength Training";
+    }
 
-      water:
-      "4L",
+    if(bmiCategory === "Normal"){
 
-      goal:
-      "Calorie Surplus",
+      return "Balanced Fitness";
+    }
 
-      meals:[
+    if(bmiCategory === "Overweight"){
 
-        "🥣 Oats + Peanut Butter + Banana",
+      return "Fat Burn HIIT";
+    }
 
-        "🥚 Egg Omelette + Brown Bread",
+    return "Walking + Cardio";
+  };
 
-        "🍗 Chicken Breast + Rice",
+  /* DIET */
 
-        "🥛 Protein Shake + Dry Fruits",
+  const getDietPlan = () => {
 
-        "🍚 Paneer + Sweet Potato"
-      ]
-    };
-  }
+    let plan = {};
 
-  else if(
-    bmiValue >= 18.5 &&
-    bmiValue < 25
-  ){
+    if(bmiCategory === "Underweight"){
 
-    plan = {
+      plan = {
 
-      title:
-      "Balanced Fitness Diet",
+        calories:"2800 kcal",
 
-      calories:
-      "2500 kcal",
+        protein:"170g",
 
-      protein:
-      "160g",
+        carbs:"350g",
 
-      carbs:
-      "250g",
+        water:"4L",
 
-      fats:
-      "70g",
+        meals:[
 
-      water:
-      "4L",
+          "Oats + Banana Smoothie",
 
-      goal:
-      "Maintain Fitness",
+          "Eggs + Brown Bread",
 
-      meals:[
+          "Chicken + Rice Bowl",
 
-        "🍓 Fruits + Oats",
+          "Protein Shake"
+        ]
+      };
+    }
 
-        "🥚 Eggs + Toast",
+    else if(
+      bmiCategory === "Normal"
+    ){
 
-        "🍗 Chicken + Rice + Vegetables",
+      plan = {
 
-        "🥗 Salad + Green Tea",
+        calories:"2500 kcal",
 
-        "🐟 Fish + Sweet Potato"
-      ]
-    };
-  }
+        protein:"160g",
 
-  else if(
-    bmiValue >= 25 &&
-    bmiValue < 30
-  ){
+        carbs:"250g",
 
-    plan = {
+        water:"4L",
 
-      title:
-      "Fat Loss Diet",
+        meals:[
 
-      calories:
-      "1900 kcal",
+          "Fruits + Oats",
 
-      protein:
-      "150g",
+          "Eggs + Toast",
 
-      carbs:
-      "140g",
+          "Chicken + Rice",
 
-      fats:
-      "55g",
+          "Green Salad"
+        ]
+      };
+    }
 
-      water:
-      "5L",
+    else if(
+      bmiCategory === "Overweight"
+    ){
 
-      goal:
-      "Calorie Deficit",
+      plan = {
 
-      meals:[
+        calories:"1900 kcal",
 
-        "🥣 Oats + Chia Seeds",
+        protein:"150g",
 
-        "🥚 Boiled Eggs + Salad",
+        carbs:"140g",
 
-        "🍗 Grilled Chicken + Vegetables",
+        water:"5L",
 
-        "🥗 Green Salad + Soup",
+        meals:[
 
-        "🍵 Green Tea + Almonds"
-      ]
-    };
-  }
+          "Oats + Chia Seeds",
 
-  else{
+          "Boiled Eggs",
 
-    plan = {
+          "Grilled Chicken",
 
-      title:
-      "Obesity Reduction Diet",
+          "Salad + Soup"
+        ]
+      };
+    }
 
-      calories:
-      "1600 kcal",
+    else{
 
-      protein:
-      "140g",
+      plan = {
 
-      carbs:
-      "100g",
+        calories:"1600 kcal",
 
-      fats:
-      "45g",
+        protein:"140g",
 
-      water:
-      "5L",
+        carbs:"100g",
 
-      goal:
-      "Aggressive Fat Loss",
+        water:"5L",
 
-      meals:[
+        meals:[
 
-        "🥬 Detox Smoothie",
+          "Detox Smoothie",
 
-        "🥚 Egg Whites + Vegetables",
+          "Egg Whites",
 
-        "🍗 Lean Chicken + Salad",
+          "Lean Chicken",
 
-        "🥦 Broccoli + Soup",
+          "Broccoli Soup"
+        ]
+      };
+    }
 
-        "🍵 Green Tea"
-      ]
-    };
-  }
+    return plan;
+  };
 
-  return plan;
-};
-
-const diet =
-  getDietPlan();
+  const diet =
+    getDietPlan();
 
   /* LOGOUT */
 
@@ -708,7 +638,7 @@ const diet =
           </h1>
 
           <p className="tagline">
-            Premium Fitness Dashboard
+            AI Fitness Dashboard
           </p>
 
           <ul className="menu">
@@ -725,11 +655,19 @@ const diet =
               Profile
             </li>
 
-            <li>
+            <li
+              onClick={() =>
+                navigate("/workouts")
+              }
+            >
               Workout Plans
             </li>
 
-            <li>
+            <li
+              onClick={() =>
+                navigate("/calories")
+              }
+            >
               Calories
             </li>
 
@@ -771,8 +709,8 @@ const diet =
             </h1>
 
             <p>
-              Track your health and
-              fitness journey
+              Track your health
+              and fitness journey
             </p>
 
           </div>
@@ -857,21 +795,25 @@ const diet =
 
             <div className="stats-top">
 
-              <h3>Streak</h3>
+              <h3>
+                Fitness Score
+              </h3>
 
             </div>
 
-            <h1>{streak}</h1>
+            <h1>
+              {fitnessScore}%
+            </h1>
 
             <p>
-              Active Days
+              AI Health Rating
             </p>
 
           </div>
 
         </div>
 
-        {/* LOWER */}
+        {/* GRID */}
 
         <div className="dashboard-grid">
 
@@ -931,12 +873,12 @@ const diet =
 
             </div>
 
+            {/* LIVE */}
+
             {
               isRunning && (
 
-                <div
-                  className="live-workout"
-                >
+                <div className="live-workout">
 
                   {
                     isPaused
@@ -960,16 +902,6 @@ const diet =
                     formatTime(timer)
                   }
 
-                  /
-
-                  {
-                    formatTime(
-                      workouts[
-                        currentWorkoutIndex
-                      ].duration
-                    )
-                  }
-
                 </div>
               )
             }
@@ -983,45 +915,167 @@ const diet =
                   (
                     workout,
                     index
-                  )=>(
+                  ) => {
 
-                  <div
-                    className="workout-item"
-                    key={index}
-                  >
+                    const isCurrent =
+                      index ===
+                      currentWorkoutIndex;
 
-                    <div
-                      className="workout-check"
-                    >
+                    const isCompleted =
+                      completed.includes(index);
 
-                      {
-                        completed.includes(index)
-                        ? "✓"
-                        : index ===
-                          currentWorkoutIndex
-                          &&
-                          isRunning
-                        ? "▶"
-                        : ""
-                      }
+                    return (
 
-                    </div>
+                      <div
+                        className={`
+                          workout-item
+                          ${
+                            isCurrent
+                            ? "active-workout"
+                            : ""
+                          }
+                        `}
+                        key={index}
+                      >
 
-                    <span>
+                        {/* LEFT */}
 
-                      {workout.name}
+                        <div
+                          className="workout-left"
+                        >
 
-                    </span>
+                          {/* ICON */}
 
-                  </div>
-                ))
+                          <div
+                            className={`
+                              workout-check
+
+                              ${
+                                isCompleted
+                                ? "completed-icon"
+
+                                : isCurrent &&
+                                  isRunning
+
+                                ? "active-icon"
+
+                                : "pending-icon"
+                              }
+                            `}
+                          >
+
+                            {
+
+                              isCompleted
+
+                              ?
+
+                              "✓"
+
+                              :
+
+                              isCurrent &&
+                              isRunning
+
+                              ?
+
+                              isPaused
+
+                                ?
+
+                                "❚❚"
+
+                                :
+
+                                "▶"
+
+                              :
+
+                              "○"
+                            }
+
+                          </div>
+
+                          {/* INFO */}
+
+                          <div>
+
+                            <h4
+                              className="workout-name"
+                            >
+
+                              {workout.name}
+
+                            </h4>
+
+                            <p
+                              className="workout-duration"
+                            >
+
+                              Duration:
+                              {" "}
+
+                              {
+                                formatTime(
+                                  workout.duration
+                                )
+                              }
+
+                            </p>
+
+                          </div>
+
+                        </div>
+
+                        {/* STATUS */}
+
+                        <div
+                          className="workout-status"
+                        >
+
+                          {
+
+                            isCompleted
+
+                            ?
+
+                            "Completed"
+
+                            :
+
+                            isCurrent &&
+                            isRunning
+
+                            ?
+
+                            isPaused
+
+                              ?
+
+                              "Paused"
+
+                              :
+
+                              "In Progress"
+
+                            :
+
+                            "Pending"
+                          }
+
+                        </div>
+
+                      </div>
+                    );
+                  }
+                )
               }
 
             </div>
 
           </div>
 
-          {/* INSIGHTS */}
+          {/* HEALTH */}
 
           <div className="dashboard-card large-card">
 
@@ -1036,29 +1090,7 @@ const diet =
               </h3>
 
               <p>
-
-                {
-                  bmiCategory ===
-                  "Normal"
-
-                  ?
-
-                  "Great job maintaining a healthy body composition."
-
-                  :
-
-                  bmiCategory ===
-                  "Underweight"
-
-                  ?
-
-                  "Increase healthy calorie intake and strength workouts."
-
-                  :
-
-                  "Focus on cardio and balanced nutrition."
-                }
-
+                {getHealthMessage()}
               </p>
 
               <p
@@ -1067,51 +1099,67 @@ const diet =
                 }}
               >
 
-                Health Risk:
+                <strong>
+                  Health Risk:
+                </strong>
+
                 {" "}
+
                 {getHealthRisk()}
 
               </p>
 
-            </div>
+              <p
+                style={{
+                  marginTop:"10px"
+                }}
+              >
 
-            {/* DIET */}
+                <strong>
+                  Recommended Workout:
+                </strong>
 
-            <div
-              className="diet-box"
-            >
-
-              <h3>
-                Diet Recommendation
-              </h3>
-
-              <p>
-                Calories:
                 {" "}
-                {diet.calories}
-              </p>
 
-              <p>
-                Protein:
-                {" "}
-                {diet.protein}
-              </p>
+                {
+                  getWorkoutSuggestion()
+                }
 
-              <p>
-                Carbs:
-                {" "}
-                {diet.carbs}
-              </p>
-
-              <p>
-                Water:
-                {" "}
-                {diet.water}
               </p>
 
             </div>
 
-            {/* PROGRESS */}
+            {/* FITNESS */}
+
+            <div className="progress-item">
+
+              <div className="progress-label">
+
+                <span>
+                  Fitness Score
+                </span>
+
+                <span>
+                  {fitnessScore}%
+                </span>
+
+              </div>
+
+              <div className="progress-bar">
+
+                <div
+                  className="progress-fill"
+                  style={{
+                    width:
+                    `${fitnessScore}%`
+                  }}
+                ></div>
+
+              </div>
+
+            </div>
+
+            {/* WORKOUT */}
 
             <div className="progress-item">
 
@@ -1205,11 +1253,166 @@ const diet =
 
         </div>
 
+        {/* DIET */}
+
+        <div className="dashboard-card ai-diet-card">
+
+          <div className="card-header">
+
+            <div>
+
+              <h2>
+                Diet Recommendation
+              </h2>
+
+              <p className="ai-subtitle">
+
+                Personalized nutrition
+                guidance based on BMI
+
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* GRID */}
+
+          <div className="diet-grid">
+
+            <div className="diet-stat">
+
+              <h4>
+                Calories
+              </h4>
+
+              <h1>
+                {diet.calories}
+              </h1>
+
+            </div>
+
+            <div className="diet-stat">
+
+              <h4>
+                Protein
+              </h4>
+
+              <h1>
+                {diet.protein}
+              </h1>
+
+            </div>
+
+            <div className="diet-stat">
+
+              <h4>
+                Carbs
+              </h4>
+
+              <h1>
+                {diet.carbs}
+              </h1>
+
+            </div>
+
+            <div className="diet-stat">
+
+              <h4>
+                Water
+              </h4>
+
+              <h1>
+                {diet.water}
+              </h1>
+
+            </div>
+
+          </div>
+
+          {/* GOAL */}
+
+          <div className="goal-box">
+
+            <h3>
+              Recommended Goal
+            </h3>
+
+            <p>
+
+              {
+                bmiCategory ===
+                "Underweight"
+
+                ?
+
+                "Focus on muscle gain with calorie surplus and strength workouts."
+
+                :
+
+                bmiCategory ===
+                "Normal"
+
+                ?
+
+                "Maintain balanced nutrition and regular workouts."
+
+                :
+
+                bmiCategory ===
+                "Overweight"
+
+                ?
+
+                "Reduce body fat with calorie deficit and cardio exercises."
+
+                :
+
+                "Improve health through active lifestyle and weight reduction."
+              }
+
+            </p>
+
+          </div>
+
+          {/* MEALS */}
+
+          <div className="meal-section">
+
+            <h3>
+              Suggested Meals
+            </h3>
+
+            <div className="meal-grid">
+
+              {
+                diet.meals.map(
+                  (
+                    meal,
+                    index
+                  ) => (
+
+                  <div
+                    key={index}
+                    className="meal-item"
+                  >
+
+                    {meal}
+
+                  </div>
+                ))
+              }
+
+            </div>
+
+          </div>
+
+        </div>
+
       </div>
 
     </div>
   );
-  
 }
 
 export default Dashboard;
